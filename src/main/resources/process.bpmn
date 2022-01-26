@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_120vb8l" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.11.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:process id="CALL" name="Call" isExecutable="true">
+    <bpmn:sequenceFlow id="Flow_1yrvw4i" sourceRef="StartEvent_1" targetRef="Condition" />
+    <bpmn:endEvent id="Event_0rgc7yh">
+      <bpmn:incoming>Flow_0kj4p6b</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0zp0lpf" name="Attended call" sourceRef="Activity_162ra50" targetRef="Activity_10ubg5g">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${(status == 'attended') || (status == 'unattended' &amp;&amp; count &gt;= 3)}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0tmpi1u" sourceRef="Activity_10ubg5g" targetRef="Activity_0ioegrb" />
+    <bpmn:exclusiveGateway id="Condition" name="Task type condition">
+      <bpmn:incoming>Flow_1yrvw4i</bpmn:incoming>
+      <bpmn:outgoing>Flow_03wigsc</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0ehnd00</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_03wigsc" name="Unattended/&#10;Missed call" sourceRef="Condition" targetRef="Activity_0c17zjl">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${(status == 'unattended')||(status == 'missed')}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0ehnd00" name="Attended call" sourceRef="Condition" targetRef="Activity_10ubg5g">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${callTaskExists}" event="take" />
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 'attended'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="Activity_10ubg5g" name="Email task creation" camunda:asyncBefore="true" camunda:delegateExpression="${attendedCall}">
+      <bpmn:extensionElements>
+        <camunda:failedJobRetryTimeCycle>R9/PT1M</camunda:failedJobRetryTimeCycle>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0zp0lpf</bpmn:incoming>
+      <bpmn:incoming>Flow_0ehnd00</bpmn:incoming>
+      <bpmn:outgoing>Flow_0tmpi1u</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:startEvent id="StartEvent_1" camunda:asyncAfter="true">
+      <bpmn:outgoing>Flow_1yrvw4i</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_0l23mmu" camunda:variableName="type">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${ source == 'clm'}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:receiveTask id="Activity_162ra50" name="Wait until call is completed" messageRef="Message_19t3ayx">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${callEventCompleted}" event="end" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0ulbwr2</bpmn:incoming>
+      <bpmn:outgoing>Flow_0zp0lpf</bpmn:outgoing>
+      <bpmn:outgoing>Flow_08gu47f</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:sequenceFlow id="Flow_0ulbwr2" sourceRef="Activity_0c17zjl" targetRef="Activity_162ra50" />
+    <bpmn:sequenceFlow id="Flow_08gu47f" name="Unnatended call" sourceRef="Activity_162ra50" targetRef="Activity_0c17zjl">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${(status == 'unattended' &amp;&amp; count &lt; 3)}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0kj4p6b" sourceRef="Activity_0ioegrb" targetRef="Event_0rgc7yh" />
+    <bpmn:receiveTask id="Activity_0ioegrb" name="Wait until email is completed" messageRef="Message_1dx0pw3">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${emailEventCompleted}" event="end" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0tmpi1u</bpmn:incoming>
+      <bpmn:outgoing>Flow_0kj4p6b</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:serviceTask id="Activity_0c17zjl" name="Call task creation" camunda:asyncAfter="true" camunda:delegateExpression="${unattendedCall}">
+      <bpmn:incoming>Flow_03wigsc</bpmn:incoming>
+      <bpmn:incoming>Flow_08gu47f</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ulbwr2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Event_0e4f1op" cancelActivity="false" attachedToRef="Activity_162ra50">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${callOverdue}" event="start" />
+      </bpmn:extensionElements>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0aj2r39">
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">PT15S</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Event_0nlm18l" cancelActivity="false" attachedToRef="Activity_0ioegrb">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${emailOverdue}" event="start" />
+      </bpmn:extensionElements>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_01gwtal">
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">PT15S</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_19t3ayx" name="customer-lead-call-${lead_id}" />
+  <bpmn:message id="Message_1dx0pw3" name="customer-lead-email-${lead_id}" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="CALL">
+      <bpmndi:BPMNEdge id="Flow_0kj4p6b_di" bpmnElement="Flow_0kj4p6b">
+        <di:waypoint x="760" y="430" />
+        <di:waypoint x="842" y="430" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_08gu47f_di" bpmnElement="Flow_08gu47f">
+        <di:waypoint x="540" y="160" />
+        <di:waypoint x="540" y="100" />
+        <di:waypoint x="370" y="100" />
+        <di:waypoint x="370" y="160" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="416" y="82" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ulbwr2_di" bpmnElement="Flow_0ulbwr2">
+        <di:waypoint x="420" y="200" />
+        <di:waypoint x="490" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ehnd00_di" bpmnElement="Flow_0ehnd00">
+        <di:waypoint x="270" y="335" />
+        <di:waypoint x="270" y="430" />
+        <di:waypoint x="490" y="430" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="328" y="403" width="64" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03wigsc_di" bpmnElement="Flow_03wigsc">
+        <di:waypoint x="270" y="285" />
+        <di:waypoint x="270" y="200" />
+        <di:waypoint x="320" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="290" y="250" width="60" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0tmpi1u_di" bpmnElement="Flow_0tmpi1u">
+        <di:waypoint x="590" y="430" />
+        <di:waypoint x="660" y="430" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0zp0lpf_di" bpmnElement="Flow_0zp0lpf">
+        <di:waypoint x="540" y="240" />
+        <di:waypoint x="540" y="390" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="548" y="312" width="64" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1yrvw4i_di" bpmnElement="Flow_1yrvw4i">
+        <di:waypoint x="188" y="310" />
+        <di:waypoint x="245" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0rgc7yh_di" bpmnElement="Event_0rgc7yh">
+        <dc:Bounds x="842" y="412" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1k11owa_di" bpmnElement="Condition" isMarkerVisible="true">
+        <dc:Bounds x="245" y="285" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="316" y="296" width="47" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1pk0aem_di" bpmnElement="Activity_10ubg5g">
+        <dc:Bounds x="490" y="390" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0owr101_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="292" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ssmpdl_di" bpmnElement="Activity_162ra50">
+        <dc:Bounds x="490" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0i5ak0z_di" bpmnElement="Activity_0ioegrb">
+        <dc:Bounds x="660" y="390" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ht1xvk_di" bpmnElement="Activity_0c17zjl">
+        <dc:Bounds x="320" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0kcesx0_di" bpmnElement="Event_0nlm18l">
+        <dc:Bounds x="692" y="452" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0mmujlm_di" bpmnElement="Event_0e4f1op">
+        <dc:Bounds x="572" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
