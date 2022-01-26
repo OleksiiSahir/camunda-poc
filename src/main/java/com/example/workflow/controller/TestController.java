@@ -37,12 +37,16 @@ public class TestController {
             createNewProcess(params, leadId);
         } else {
             if ("call".equalsIgnoreCase(type)) {
-                List<ActivityInstance> callActivities = findCallActivities(processes, type);
-                if (!callActivities.isEmpty()) {
-                    runtimeService.createMessageCorrelation("customer-lead-" + type + "-" + leadId)
-                            .processInstanceId(callActivities.get(0).getProcessInstanceId())
-                            .setVariables(params)
-                            .correlateAll();
+                Optional<ActivityInstance> callActivity = findCallActivities(processes, type).stream().findFirst();
+                if (callActivity.isPresent()) {
+                    if (!"missed".equalsIgnoreCase((String) params.get("status"))) {
+                        runtimeService.createMessageCorrelation("customer-lead-" + type + "-" + leadId)
+                                .processInstanceId(callActivity.get().getProcessInstanceId())
+                                .setVariables(params)
+                                .correlate();
+                    } else {
+                        System.out.println("Skipping 'missed' event");
+                    }
                     System.out.println("Proceed flow with key " + leadId + " for calls");
                 } else {
                     createNewProcess(params, leadId);
