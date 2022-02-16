@@ -26,7 +26,8 @@ public class NotifyCallActivities implements JavaDelegate {
     }
 
     @Override
-    public void execute(DelegateExecution execution) throws Exception {
+    public void execute(DelegateExecution execution) {
+        System.out.println("NotifyCallActivities executed");
         List<ProcessInstance> processes = findProcess(execution.getProcessBusinessKey(), execution.getProcessInstanceId());
         Optional<ActivityInstance> callActivity = findCallActivities(processes).stream().findFirst();
         if (callActivity.isPresent()) {

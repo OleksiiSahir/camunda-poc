@@ -1,15 +1,49 @@
 package com.example.workflow.delegate;
 
+import com.example.workflow.domain.TaskContext;
+import com.example.workflow.enums.Status;
+import com.example.workflow.enums.Type;
+import com.example.workflow.repository.ClmTaskRepository;
+import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
+import java.util.Objects;
+import java.util.UUID;
+
+import static com.example.workflow.mapper.ClmTaskEntityMapper.SOURCE;
+
 @Component
+@RequiredArgsConstructor
 public class EmailEventCompleted implements JavaDelegate {
 
+    private final ClmTaskRepository clmTaskRepository;
+
     @Override
-    public void execute(DelegateExecution execution) throws Exception {
-        System.out.println("EmailEventCompleted \n publishing event close task email");
+    public void execute(DelegateExecution delegateExecution) throws Exception {
+        String leadId = delegateExecution.getVariable("lead_id").toString();
+        System.out.println("EmailEventCompleted \n Closing task call. leadId: " + leadId);
+
+        System.out.println("!!!!!SOURCE" + delegateExecution.getVariable(SOURCE));
+        UUID target = (UUID) delegateExecution.getVariable(SOURCE);
+        clmTaskRepository.findByBusinessKeyAndTypeAndStatus(
+                leadId,
+                Type.EMAIL,
+                Status.TO_DO.name()
+        )
+                .ifPresent(task -> closeTask(task, target));
+    }
+
+    private void closeTask(TaskContext task, UUID target) {
+        task.setStatus(Status.DONE.name());
+        task.setClosedAt(OffsetDateTime.now());
+        task.setUpdatedAt(OffsetDateTime.now());
+        // is this correct ?
+        task.setClosedBy(task.getAssignedTo());
+        task.setTarget(target);
+        clmTaskRepository.saveAndFlush(task);
     }
 
 }
