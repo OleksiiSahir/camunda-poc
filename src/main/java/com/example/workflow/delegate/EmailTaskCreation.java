@@ -10,25 +10,21 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
-import static com.example.workflow.mapper.ClmTaskEntityMapper.*;
+import static com.example.workflow.util.CamundaClmTaskVariables.*;
 
 @Component
-public class AttendedCall extends DbTaskDelegate<TaskContext> {
+public class EmailTaskCreation extends DbTaskDelegate<TaskContext> {
 
-    public AttendedCall(AbstractTaskRepository<TaskContext> taskRepository, TaskEntityMapper<TaskContext> taskMapper) {
+    public EmailTaskCreation(AbstractTaskRepository<TaskContext> taskRepository, TaskEntityMapper<TaskContext> taskMapper) {
         super(taskRepository, taskMapper);
     }
 
     @Override
     public void execute(DelegateExecution execution) {
         System.out.println("AttendedCall executed");
-        if (execution.getVariable("status").equals("attended")) {
+        if (execution.getVariable("call_status").equals("attended")) {
             execution.setVariable("count", 0);
         }
-        execution.setVariable(SUB_TYPE, SubType.EMAIL_AFTER_Y_UNATTENDED_OUTBOUND_CALL);
-        execution.setVariable(TYPE, Type.EMAIL);
-        execution.setVariable(SOURCE, UUID.randomUUID());
-        // create email task
         super.execute(execution);
     }
 }

@@ -10,10 +10,9 @@ import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
-import static com.example.workflow.mapper.ClmTaskEntityMapper.SOURCE;
+import static com.example.workflow.util.CamundaClmTaskVariables.*;
 
 @Component
 @RequiredArgsConstructor
@@ -23,17 +22,26 @@ public class EmailEventCompleted implements JavaDelegate {
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
+        Boolean skipTask = (Boolean) delegateExecution.getVariable("skipTask");
+        if (skipTask) {
+            System.out.println("EmailEventCompleted step skipped as skipTask: " + skipTask);
+            return;
+        }
         String leadId = delegateExecution.getVariable("lead_id").toString();
-        System.out.println("EmailEventCompleted \n Closing task call. leadId: " + leadId);
+        System.out.println("EmailEventCompleted \n Closing task email. leadId: " + leadId);
 
-        System.out.println("!!!!!SOURCE" + delegateExecution.getVariable(SOURCE));
-        UUID target = (UUID) delegateExecution.getVariable(SOURCE);
-        clmTaskRepository.findByBusinessKeyAndTypeAndStatus(
+        System.out.println("!!!!!SOURCE" + delegateExecution.getVariable(TASK_SOURCE));
+        UUID target = (UUID) delegateExecution.getVariable(TASK_SOURCE);
+        List<TaskContext> tasks = clmTaskRepository.findAllByBusinessKeyAndTypeAndStatus(
                 leadId,
                 Type.EMAIL,
                 Status.TO_DO.name()
-        )
-                .ifPresent(task -> closeTask(task, target));
+        );
+
+        if (!tasks.isEmpty()) {
+            TaskContext oldestTask = Collections.min(tasks);
+            closeTask(oldestTask, target);
+        }
     }
 
     private void closeTask(TaskContext task, UUID target) {

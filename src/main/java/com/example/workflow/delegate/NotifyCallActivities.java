@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @Component
 public class NotifyCallActivities implements JavaDelegate {
 
-    private final static String ACTIVITY_ID = "Activity_162ra50";
+    private final static String ACTIVITY_ID = "WaitForCallCompletion";
 
     private final RuntimeService runtimeService;
 
@@ -32,6 +32,7 @@ public class NotifyCallActivities implements JavaDelegate {
         Optional<ActivityInstance> callActivity = findCallActivities(processes).stream().findFirst();
         if (callActivity.isPresent()) {
             String status = (String) execution.getVariable("status");
+//            boolean skipTask = (boolean) execution.getVariable("skipTask");
             if (!"missed".equalsIgnoreCase(status)) {
                 runtimeService.createMessageCorrelation("customer-lead-call-" + execution.getProcessBusinessKey())
                         .processInstanceId(callActivity.get().getProcessInstanceId())

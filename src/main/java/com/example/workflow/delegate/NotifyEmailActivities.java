@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Component
 public class NotifyEmailActivities implements JavaDelegate {
 
-    private final static String ACTIVITY_ID = "Activity_0ioegrb";
+    private final static String ACTIVITY_ID = "WaitForEmailCompletion";
 
     private final RuntimeService runtimeService;
 

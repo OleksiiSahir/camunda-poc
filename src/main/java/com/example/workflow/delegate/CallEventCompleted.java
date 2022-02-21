@@ -12,7 +12,7 @@ import com.example.workflow.enums.Type;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import static com.example.workflow.mapper.ClmTaskEntityMapper.SOURCE;
+import static com.example.workflow.util.CamundaClmTaskVariables.TASK_SOURCE;
 
 @Component
 @RequiredArgsConstructor
@@ -22,11 +22,17 @@ public class CallEventCompleted implements JavaDelegate {
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
+        System.out.println("SkipTask: " + delegateExecution.getVariable("skipTask"));
+        Boolean skipTask = (Boolean) delegateExecution.getVariable("skipTask");
+        if (skipTask) {
+            System.out.println("CallEventCompleted step skipped as skipTask: " + skipTask);
+            return;
+        }
         String leadId = delegateExecution.getVariable("lead_id").toString();
         System.out.println("CallEventCompleted \n Closing task call. leadId: " + leadId);
 
-        System.out.println("!!!!!SOURCE" + delegateExecution.getVariable(SOURCE));
-        UUID target = (UUID) delegateExecution.getVariable(SOURCE);
+        System.out.println("!!!!!SOURCE" + delegateExecution.getVariable(TASK_SOURCE));
+        UUID target = (UUID) delegateExecution.getVariable(TASK_SOURCE);
         clmTaskRepository.findByBusinessKeyAndTypeAndStatus(
                 leadId,
                 Type.CALL,
@@ -38,7 +44,10 @@ public class CallEventCompleted implements JavaDelegate {
         task.setStatus(Status.DONE.name());
         task.setClosedAt(OffsetDateTime.now());
         task.setUpdatedAt(OffsetDateTime.now());
+        // Uuid of an agent that created interaction
+//        task.setUpdatedBy();
         // is this correct ?
+        // closedBy should be ID of an agent that created interaction
         task.setClosedBy(task.getAssignedTo());
         task.setTarget(target);
         clmTaskRepository.saveAndFlush(task);

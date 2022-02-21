@@ -19,7 +19,7 @@ import java.util.UUID;
 @EntityListeners(AuditingEntityListener.class)
 @AllArgsConstructor
 @NoArgsConstructor
-public class TaskContext extends Task implements Serializable {
+public class TaskContext extends Task implements Serializable, Comparable<TaskContext> {
     @Enumerated(EnumType.STRING)
     @Column(name = "type")
     private Type type;
@@ -55,4 +55,9 @@ public class TaskContext extends Task implements Serializable {
 
     @Column(name = "unattended_calls_count")
     private Integer unattendedCallsCount;
+
+    @Override
+    public int compareTo(TaskContext o) {
+        return this.getEta().compareTo(o.getEta());
+    }
 }
