@@ -1,21 +1,15 @@
 package com.example.workflow.delegate;
 
-import com.example.workflow.domain.TaskContext;
-import com.example.workflow.enums.SubType;
-import com.example.workflow.enums.Type;
+import com.example.workflow.domain.TaskWithContext;
 import com.example.workflow.mapper.TaskEntityMapper;
 import com.example.workflow.repository.AbstractTaskRepository;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
-
-import static com.example.workflow.util.CamundaClmTaskVariables.*;
-
 @Component
-public class EmailTaskCreation extends DbTaskDelegate<TaskContext> {
+public class EmailTaskCreation extends DbTaskDelegate<TaskWithContext> {
 
-    public EmailTaskCreation(AbstractTaskRepository<TaskContext> taskRepository, TaskEntityMapper<TaskContext> taskMapper) {
+    public EmailTaskCreation(AbstractTaskRepository<TaskWithContext> taskRepository, TaskEntityMapper<TaskWithContext> taskMapper) {
         super(taskRepository, taskMapper);
     }
 

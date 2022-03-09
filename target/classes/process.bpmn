@@ -17,17 +17,12 @@
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${(call_status == 'unattended')||(call_status == 'missed')}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_0ehnd00" name="Attended call" sourceRef="Condition" targetRef="EmailTaskCreation">
-      <bpmn:extensionElements>
-        <camunda:executionListener delegateExpression="${callTaskExists}" event="take" />
-      </bpmn:extensionElements>
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${call_status == 'attended'}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:serviceTask id="EmailTaskCreation" name="Email task creation" camunda:asyncBefore="true" camunda:delegateExpression="${emailTaskCreation}">
-      <bpmn:extensionElements>
-        <camunda:failedJobRetryTimeCycle>R9/PT1M</camunda:failedJobRetryTimeCycle>
-      </bpmn:extensionElements>
       <bpmn:incoming>Flow_0zp0lpf</bpmn:incoming>
       <bpmn:incoming>Flow_0ehnd00</bpmn:incoming>
+      <bpmn:incoming>Flow_1yw812b</bpmn:incoming>
       <bpmn:outgoing>Flow_0tmpi1u</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:startEvent id="EntryPoint" camunda:asyncAfter="true">
@@ -46,7 +41,7 @@
     </bpmn:receiveTask>
     <bpmn:sequenceFlow id="Flow_0ulbwr2" sourceRef="CallTaskCreation" targetRef="WaitForCallCompletion" />
     <bpmn:sequenceFlow id="Flow_08gu47f" name="Unnatended call" sourceRef="WaitForCallCompletion" targetRef="CallTaskCreation">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${(call_status == 'unattended' &amp;&amp; count &lt; 3)}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${(call_status == 'unattended' &amp;&amp; count &lt; count_bb)}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_0kj4p6b" sourceRef="WaitForEmailCompletion" targetRef="ProcessEnd" />
     <bpmn:receiveTask id="WaitForEmailCompletion" name="Wait until email is completed" messageRef="Message_1dx0pw3">
@@ -113,9 +108,9 @@
       <bpmn:outgoing>Flow_1vd9ldi</bpmn:outgoing>
     </bpmn:sendTask>
     <bpmn:endEvent id="SkipCallTaskActivityExit">
-      <bpmn:incoming>Flow_1vq2gdr</bpmn:incoming>
+      <bpmn:incoming>Flow_0nwg7ja</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_1vq2gdr" sourceRef="SkipCallTaskActivity" targetRef="SkipCallTaskActivityExit" />
+    <bpmn:sequenceFlow id="Flow_1vq2gdr" sourceRef="SkipCallTaskActivity" targetRef="Gateway_1rcqngb" />
     <bpmn:boundaryEvent id="SkipCallTaskActivity" attachedToRef="WaitForCallCompletion">
       <bpmn:extensionElements>
         <camunda:executionListener delegateExpression="${skipTaskDelegate}" event="start" />
@@ -131,19 +126,55 @@
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_16oxulv</bpmn:outgoing>
       <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_1ij9y2o">
-        <bpmn:condition xsi:type="bpmn:tFormalExpression">${skipTask == true}</bpmn:condition>
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${skipTask == true &amp;&amp; skipInbound == false}</bpmn:condition>
       </bpmn:conditionalEventDefinition>
     </bpmn:boundaryEvent>
     <bpmn:endEvent id="Event_1vs8sby">
       <bpmn:incoming>Flow_16oxulv</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_16oxulv" sourceRef="SkipEmailTaskActivity" targetRef="Event_1vs8sby" />
+    <bpmn:exclusiveGateway id="Gateway_1rcqngb">
+      <bpmn:incoming>Flow_1vq2gdr</bpmn:incoming>
+      <bpmn:outgoing>Flow_0nwg7ja</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1yw812b</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0nwg7ja" name="End" sourceRef="Gateway_1rcqngb" targetRef="SkipCallTaskActivityExit">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${create_email == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1yw812b" name="Create Email" sourceRef="Gateway_1rcqngb" targetRef="EmailTaskCreation">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${create_email == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
   </bpmn:process>
   <bpmn:message id="Message_19t3ayx" name="customer-lead-call-${lead_id}" />
   <bpmn:message id="Message_1dx0pw3" name="customer-lead-email-${lead_id}" />
   <bpmn:signal id="Signal_0y3h8ph" name="Signal_0khhpt7" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="CALL">
+      <bpmndi:BPMNEdge id="Flow_1yw812b_di" bpmnElement="Flow_1yw812b">
+        <di:waypoint x="1000" y="225" />
+        <di:waypoint x="1000" y="360" />
+        <di:waypoint x="900" y="360" />
+        <di:waypoint x="900" y="390" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="919" y="342" width="64" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0nwg7ja_di" bpmnElement="Flow_0nwg7ja">
+        <di:waypoint x="1025" y="200" />
+        <di:waypoint x="1082" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1044" y="182" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16oxulv_di" bpmnElement="Flow_16oxulv">
+        <di:waypoint x="1030" y="372" />
+        <di:waypoint x="1030" y="310" />
+        <di:waypoint x="1102" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1vq2gdr_di" bpmnElement="Flow_1vq2gdr">
+        <di:waypoint x="928" y="200" />
+        <di:waypoint x="975" y="200" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1vd9ldi_di" bpmnElement="Flow_1vd9ldi">
         <di:waypoint x="400" y="480" />
         <di:waypoint x="400" y="522" />
@@ -220,15 +251,6 @@
           <dc:Bounds x="868" y="312" width="64" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1vq2gdr_di" bpmnElement="Flow_1vq2gdr">
-        <di:waypoint x="928" y="200" />
-        <di:waypoint x="982" y="200" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_16oxulv_di" bpmnElement="Flow_16oxulv">
-        <di:waypoint x="1030" y="372" />
-        <di:waypoint x="1030" y="310" />
-        <di:waypoint x="1102" y="310" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_0rgc7yh_di" bpmnElement="ProcessEnd">
         <dc:Bounds x="1162" y="412" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -269,10 +291,19 @@
         <dc:Bounds x="350" y="400" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_11bl8se_di" bpmnElement="SkipCallTaskActivityExit">
-        <dc:Bounds x="982" y="182" width="36" height="36" />
+        <dc:Bounds x="1082" y="182" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1vs8sby_di" bpmnElement="Event_1vs8sby">
         <dc:Bounds x="1102" y="292" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1rcqngb_di" bpmnElement="Gateway_1rcqngb" isMarkerVisible="true">
+        <dc:Bounds x="975" y="175" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1ofk57h_di" bpmnElement="SkipEmailTaskActivity">
+        <dc:Bounds x="1012" y="372" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0kppp1a_di" bpmnElement="SkipCallTaskActivity">
+        <dc:Bounds x="892" y="182" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1xtknsl_di" bpmnElement="SkipEventActivity">
         <dc:Bounds x="382" y="252" width="36" height="36" />
@@ -282,12 +313,6 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0mmujlm_di" bpmnElement="CallTaskCompletionTimer">
         <dc:Bounds x="812" y="222" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0kppp1a_di" bpmnElement="SkipCallTaskActivity">
-        <dc:Bounds x="892" y="182" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1ofk57h_di" bpmnElement="SkipEmailTaskActivity">
-        <dc:Bounds x="1012" y="372" width="36" height="36" />
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

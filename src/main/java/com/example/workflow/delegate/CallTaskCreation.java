@@ -1,6 +1,6 @@
 package com.example.workflow.delegate;
 
-import com.example.workflow.domain.TaskContext;
+import com.example.workflow.domain.TaskWithContext;
 import com.example.workflow.mapper.TaskEntityMapper;
 import com.example.workflow.repository.AbstractTaskRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class CallTaskCreation extends DbTaskDelegate<TaskContext> {
+public class CallTaskCreation extends DbTaskDelegate<TaskWithContext> {
 
-    public CallTaskCreation(AbstractTaskRepository<TaskContext> taskRepository, TaskEntityMapper<TaskContext> taskMapper) {
+    public CallTaskCreation(AbstractTaskRepository<TaskWithContext> taskRepository, TaskEntityMapper<TaskWithContext> taskMapper) {
         super(taskRepository, taskMapper);
     }
 

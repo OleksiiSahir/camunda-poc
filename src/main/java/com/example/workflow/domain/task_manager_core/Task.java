@@ -76,13 +76,19 @@ public class Task {
     @Column(name = "activity_instance_id")
     private String activityInstanceId;
 
+    @Column(
+            name = "closed_at"
+    )
+    private OffsetDateTime closedAt;
+
+    @Column(
+            name = "closed_by"
+    )
+    private UUID closedBy;
+
     @Column(name = "variables", columnDefinition = "json")
     @Type(type = "jsonb")
     private Map<String, Object> variables;
-
-    @Column(name = "context", columnDefinition = "json")
-    @Type(type = "jsonb")
-    private Map<String, Object> context;
 
 }
 

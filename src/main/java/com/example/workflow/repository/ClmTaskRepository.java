@@ -1,17 +1,11 @@
 package com.example.workflow.repository;
 
-import com.example.workflow.domain.TaskContext;
-import com.example.workflow.enums.Type;
+import com.example.workflow.domain.TaskWithContext;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
-public interface ClmTaskRepository extends AbstractTaskRepository<TaskContext> {
-
-    Optional<TaskContext> findByBusinessKeyAndTypeAndStatus(String businessKey, Type type, String status);
-
-    List<TaskContext> findAllByBusinessKeyAndTypeAndStatus(String businessKey, Type type, String status);
-
+public interface ClmTaskRepository extends AbstractTaskRepository<TaskWithContext> {
+    List<TaskWithContext> findAllByBusinessKeyAndStatus(String businessKey, String status);
 }

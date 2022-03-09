@@ -24,7 +24,6 @@ public class TaskEntityMapperImpl implements TaskEntityMapper<Task> {
                 .processInstanceId(execution.getProcessInstance().getId())
                 .activityInstanceId(execution.getActivityInstanceId())
                 .variables(execution.getVariables())
-                .context(Map.of())
                 .build();
     }
 

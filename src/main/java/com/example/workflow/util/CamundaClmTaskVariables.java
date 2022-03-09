@@ -16,4 +16,5 @@ public class CamundaClmTaskVariables {
     public static final String CLM = "clm";
     public static final String CALL_STATUS = "call_status";
     public static final String EVENT_TYPE = "event_type";
+    public static final String INTERACTION_SOURCE = "interaction_source";
 }

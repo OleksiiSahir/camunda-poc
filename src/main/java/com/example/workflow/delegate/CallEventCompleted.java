@@ -1,7 +1,9 @@
 package com.example.workflow.delegate;
 
 import com.example.workflow.domain.TaskContext;
+import com.example.workflow.domain.TaskWithContext;
 import com.example.workflow.repository.ClmTaskRepository;
+import com.example.workflow.service.ClmTaskService;
 import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
@@ -18,7 +20,7 @@ import static com.example.workflow.util.CamundaClmTaskVariables.TASK_SOURCE;
 @RequiredArgsConstructor
 public class CallEventCompleted implements JavaDelegate {
 
-    private final ClmTaskRepository clmTaskRepository;
+    private final ClmTaskService clmTaskService;
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
@@ -33,24 +35,8 @@ public class CallEventCompleted implements JavaDelegate {
 
         System.out.println("!!!!!SOURCE" + delegateExecution.getVariable(TASK_SOURCE));
         UUID target = (UUID) delegateExecution.getVariable(TASK_SOURCE);
-        clmTaskRepository.findByBusinessKeyAndTypeAndStatus(
-                leadId,
-                Type.CALL,
-                Status.TO_DO.name()
-        ).ifPresent(task -> closeTask(task, target));
-    }
-
-    private void closeTask(TaskContext task, UUID target) {
-        task.setStatus(Status.DONE.name());
-        task.setClosedAt(OffsetDateTime.now());
-        task.setUpdatedAt(OffsetDateTime.now());
-        // Uuid of an agent that created interaction
-//        task.setUpdatedBy();
-        // is this correct ?
-        // closedBy should be ID of an agent that created interaction
-        task.setClosedBy(task.getAssignedTo());
-        task.setTarget(target);
-        clmTaskRepository.saveAndFlush(task);
+        clmTaskService.findToDoCallTaskByBusinessKey(
+                leadId).ifPresent(task -> clmTaskService.closeTask(task, target, UUID.randomUUID()));
     }
 
 }

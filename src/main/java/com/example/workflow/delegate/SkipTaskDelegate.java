@@ -20,6 +20,7 @@ public class SkipTaskDelegate implements JavaDelegate {
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
+        delegateExecution.setVariable("skipTask", false);
         System.out.println("SkipTaskDelegate");
         String leadId = delegateExecution.getVariable(LEAD_ID).toString();
 //        UUID source = (UUID) delegateExecution.getVariable(SOURCE);

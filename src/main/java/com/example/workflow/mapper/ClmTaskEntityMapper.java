@@ -1,6 +1,7 @@
 package com.example.workflow.mapper;
 
 import com.example.workflow.domain.TaskContext;
+import com.example.workflow.domain.TaskWithContext;
 import com.example.workflow.enums.Status;
 import com.example.workflow.enums.SubType;
 import com.example.workflow.enums.Type;
@@ -17,47 +18,45 @@ import static com.example.workflow.util.CamundaClmTaskVariables.*;
 
 @Component
 @Primary
-public class ClmTaskEntityMapper implements TaskEntityMapper<TaskContext> {
+public class ClmTaskEntityMapper implements TaskEntityMapper<TaskWithContext> {
 
     @Override
-    public TaskContext map(DelegateExecution delegateExecution) {
-        TaskContext taskContext = new TaskContext();
-        taskContext.setUuid(UUID.randomUUID());
+    public TaskWithContext map(DelegateExecution delegateExecution) {
+        TaskWithContext taskWithContext = new TaskWithContext();
+        taskWithContext.setUuid(UUID.randomUUID());
         OffsetDateTime createdAt = OffsetDateTime.now();
-        taskContext.setCreatedAt(createdAt);
-//        taskContext.setCreatedBy((UUID) delegateExecution.getVariable(INTERACTION_CREATED_BY));
+        taskWithContext.setCreatedAt(createdAt);
         Optional.ofNullable(delegateExecution.getVariable(INTERACTION_CREATED_BY))
                 .map(el -> (UUID) el)
-                .ifPresent(taskContext::setCreatedBy);
+                .ifPresent(taskWithContext::setCreatedBy);
         Optional.ofNullable(delegateExecution.getVariable(ASSIGNED_TO))
                 .map(el -> (UUID) el)
-                .ifPresent(taskContext::setAssignedTo);
-        taskContext.setStatus(Status.TO_DO.name());
-        taskContext.setBusinessKey(delegateExecution.getVariable(LEAD_ID).toString());
-        taskContext.setProcessName(((ExecutionEntity) delegateExecution).getProcessDefinition().getKey());
-        taskContext.setType((Type) delegateExecution.getVariable(TYPE));
-        taskContext.setSubType((SubType) delegateExecution.getVariable(SUB_TYPE));
-        taskContext.setProcessInstanceId(delegateExecution.getProcessInstanceId());
-        taskContext.setTaskDefinitionKey(delegateExecution.getProcessDefinitionId());
-        taskContext.setActivityInstanceId(delegateExecution.getActivityInstanceId());
-        taskContext.setVariables(delegateExecution.getVariables());
-//        taskContext.setContext();
-        taskContext.setOnTime(true);
-//        taskContext.setSource((UUID) delegateExecution.getVariable(SOURCE));
-        taskContext.setSource(UUID.randomUUID());
-        Optional.ofNullable(delegateExecution.getVariable(TASK_SOURCE))
-                .map(el -> (UUID) el)
-                .ifPresent(taskContext::setSource);
-        OffsetDateTime eta = createdAt.plusMinutes((Integer) delegateExecution.getVariable(TARGET_MINUTES));
-        taskContext.setEta(eta);
+                .ifPresent(taskWithContext::setAssignedTo);
+        taskWithContext.setStatus(Status.TO_DO.name());
+        taskWithContext.setBusinessKey(delegateExecution.getVariable(LEAD_ID).toString());
+        taskWithContext.setProcessName(((ExecutionEntity) delegateExecution).getProcessDefinition().getKey());
+        taskWithContext.setProcessInstanceId(delegateExecution.getProcessInstanceId());
+        taskWithContext.setTaskDefinitionKey(delegateExecution.getProcessDefinitionId());
+        taskWithContext.setActivityInstanceId(delegateExecution.getActivityInstanceId());
+        taskWithContext.setVariables(delegateExecution.getVariables());
+//        OffsetDateTime eta2 = createdAt.plusMinutes((Integer) delegateExecution.getVariable(TARGET_MINUTES));
+        OffsetDateTime eta = createdAt.plusMinutes(1);
+        setContext(taskWithContext, delegateExecution, eta);
+        delegateExecution.setVariable("expiryDate", eta.toInstant().toString());
+        return taskWithContext;
+    }
+
+    private void setContext(TaskWithContext taskWithContext, DelegateExecution delegateExecution, OffsetDateTime eta) {
+        TaskContext context = new TaskContext();
+        context.setType((Type) delegateExecution.getVariable(TYPE));
+        context.setSubType((SubType) delegateExecution.getVariable(SUB_TYPE));
+        context.setOnTime(true);
+        context.setSource(UUID.randomUUID());
+        context.setEta(eta);
         Optional.ofNullable(delegateExecution.getVariable(COUNT))
                 .map(el -> (Integer) el)
-                .ifPresent(taskContext::setUnattendedCallsCount);
-
-
-        delegateExecution.setVariable("expiryDate", eta.toInstant().toString());
-
-        return taskContext;
+                .ifPresent(context::setUnattendedCallsCount);
+        taskWithContext.setContext(context);
     }
 
 }
